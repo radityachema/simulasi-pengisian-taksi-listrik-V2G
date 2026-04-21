@@ -51,7 +51,7 @@ class EightyTwentyPolicy(SchedulePolicy):
         action = numpy.zeros((50, 2))
         for v in range(len(info["fleet"])):
             if observation[v, 1] < 0.2:
-                action[v, 0] = 72.1
+                action[v, 0] = 1
                 action[v, 1] = 72.1
         return action
 
@@ -63,13 +63,13 @@ class DnnPolicy(SchedulePolicy):
     
     def __init__(self, weights: str) -> None:
         super().__init__()
-        self.dnn = torch.load(weights, weights_only=False).eval()
+        self.dnn = torch.load(weights, weights_only=False).eval().cuda()
 
     def schedule(self, observation, info):
         with torch.no_grad():
             x = torch.from_numpy(observation).unsqueeze(0).cuda()
             action = self.dnn(x)[0].squeeze().cpu().detach().numpy()
-            action[:, 1] = action[:, 1] * 10.0
+            action[:, 1] = numpy.abs(action[:, 1]) * 10.0
             return action
 
 

@@ -83,8 +83,9 @@ class ReplayDemand(Demand):
         try:
             while self.t < end:
                 self.last = next(self.reader)
-                jobs.add(Job(self.last, job_id=self.global_idx, region=self.region))
-                self.global_idx += 1
+                if int(self.last["pickup_location"]) in self.region.map and int(self.last["dropoff_location"]) in self.region.map:
+                    jobs.add(Job(self.last, job_id=self.global_idx, region=self.region))
+                    self.global_idx += 1
                 self.t = datetime.datetime.strptime(
                     self.last["pickup_time"], self.datefmt
                 )

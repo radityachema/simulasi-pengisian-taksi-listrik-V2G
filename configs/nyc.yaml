@@ -3,8 +3,8 @@ delta t: 3600      # Seconds
 start t: 2020/01/01 00:00:01
 end t: 2025/12/31 12:59:59
 
-city: ../data/nyc-district-map2.pkl
-demand: ../data/nyc_demand.csv
+city: data/nyc-map.pkl
+demand: data/nyc-demand.csv
 
 fleet:
   size: 50

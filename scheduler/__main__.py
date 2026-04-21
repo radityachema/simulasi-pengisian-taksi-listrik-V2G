@@ -44,14 +44,14 @@ if __name__ == "__main__":
 
     datalogger = DataLogger(args.output)
 
-    if args.action.lower() == 'TRAIN':
+    if args.action.lower() == 'train':
         env = TaxiFleetSimulator(config)
         env.reset()
         model = PPO("MlpPolicy", env, verbose=1)
         model.learn(total_timesteps=args.epochs)
         torch.save(model.policy, "ppo_policy.pt")
 
-    elif args.action.lower() == 'EVAL':
+    elif args.action.lower() == 'eval':
         policy = None
         if args.policy.lower() == "eightytwenty":
             policy = EightyTwentyPolicy()
