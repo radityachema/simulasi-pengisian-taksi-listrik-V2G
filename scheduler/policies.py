@@ -63,11 +63,12 @@ class DnnPolicy(SchedulePolicy):
     
     def __init__(self, weights: str) -> None:
         super().__init__()
-        self.dnn = torch.load(weights, weights_only=False).eval().cuda()
+        self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+        self.dnn = torch.load(weights, weights_only=False).eval().to(self.device)
 
     def schedule(self, observation, info):
         with torch.no_grad():
-            x = torch.from_numpy(observation).unsqueeze(0).cuda()
+            x = torch.from_numpy(observation).unsqueeze(0).to(self.device)
             action = self.dnn(x)[0].squeeze().cpu().detach().numpy()
             action[:, 1] = numpy.abs(action[:, 1]) * 10.0
             return action
