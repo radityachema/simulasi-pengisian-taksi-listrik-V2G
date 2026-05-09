@@ -1,7 +1,7 @@
 max steps: 100
 delta t: 3600      # Seconds
-start t: 2019/01/01 15:00:01
-end t: 2019/01/08 15:00:00
+start t: 2019/01/01 00:00:01
+end t: 2019/01/31 23:59:59
 
 city: data/chicago-map.pkl
 demand: data/chicago_demand.csv
@@ -20,7 +20,7 @@ charging stations:
     max total power: 500
     efficiency: 0.9
     ports: 10
-  - location: 32
+  - location: 55
     max port power: 50
     max total power: 500
     efficiency: 0.9
