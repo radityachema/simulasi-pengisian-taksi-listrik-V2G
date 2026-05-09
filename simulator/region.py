@@ -1,6 +1,6 @@
 """Region map."""
 
-from typing import Dict, ForwardRef, Self, Tuple
+from typing import Dict, ForwardRef, Tuple
 
 
 import pickle
@@ -16,7 +16,7 @@ class Location:
         """Represent the location as a dictionary."""
         raise NotImplemented
 
-    def to(self, location: Self) -> Tuple[float, float]:
+    def to(self, location: "Location") -> Tuple[float, float]:
         """Distance to another <location> in the same map.
 
         Returns:
