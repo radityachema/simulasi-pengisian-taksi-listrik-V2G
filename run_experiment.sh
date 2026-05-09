@@ -12,7 +12,7 @@ EPOCHS=5000
 
 echo ""
 echo ">>> [1/5] Training V1G Baseline (Smart Charging)..."
-python3 -m scheduler -c configs/chicago_v1g.yaml -a TRAIN --epochs $EPOCHS
+python3 -m scheduler -c configs/chicago_v1g.yaml -a TRAIN -o logs/v1g_train.csv --epochs $EPOCHS
 mv ppo_policy.pt v1g_policy.pt
 
 echo ""
@@ -21,7 +21,7 @@ python3 -m scheduler -c configs/chicago_v1g.yaml -a EVAL -p DNN -w v1g_policy.pt
 
 echo ""
 echo ">>> [3/5] Training V2G (Bidirectional Charging)..."
-python3 -m scheduler -c configs/chicago_v2g.yaml -a TRAIN --epochs $EPOCHS
+python3 -m scheduler -c configs/chicago_v2g.yaml -a TRAIN -o logs/v2g_train.csv --epochs $EPOCHS
 mv ppo_policy.pt v2g_policy.pt
 
 echo ""
