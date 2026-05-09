@@ -101,7 +101,16 @@ class TaxiFleetSimulator(gym.Env):
 
         # Initialize State and Action Spaces
         self.observation_space = gym.spaces.Box(0,1, shape=(len(self.fleet), 2))
-        self.action_space = gym.spaces.Box(0,1, shape=(len(self.fleet), 2))
+        
+        self.enable_v2g = True # Toggle V2G
+        self.c_max = self.config['charging stations'][0]['max port power'] if self.config['charging stations'] else 50.0
+        
+        low_action = numpy.zeros((len(self.fleet), 2))
+        high_action = numpy.ones((len(self.fleet), 2))
+        if self.enable_v2g:
+            low_action[:, 1] = -self.c_max # Allow negative charge rate for V2G
+        high_action[:, 1] = self.c_max
+        self.action_space = gym.spaces.Box(low=low_action, high=high_action, shape=(len(self.fleet), 2))
         self.step_count = 0
 
         # Global state information
@@ -153,9 +162,19 @@ class TaxiFleetSimulator(gym.Env):
         """
 
         # First update vehicle statuses
+        eta = 0.90 # Round-trip efficiency loss
         for idx in range(len(self.fleet)):
-            if action[idx,0] > 0.5 and self.fleet[idx].status in [VehicleStatus.IDLE, VehicleStatus.CHARGING, VehicleStatus.TOCHARGE]:
-                self.fleet[idx].charge(self.get_closest_charger(self.fleet[idx]), action[idx,1])
+            charge_flag, c_v = action[idx,0], action[idx,1]
+            if not self.enable_v2g:
+                c_v = max(0.0, c_v)
+
+            if charge_flag > 0.5 and self.fleet[idx].status in [VehicleStatus.IDLE, VehicleStatus.CHARGING, VehicleStatus.TOCHARGE]:
+                if c_v >= 0:
+                    self.fleet[idx].charge(self.get_closest_charger(self.fleet[idx]), c_v)
+                else:
+                    # Update SoC directly for discharging with efficiency loss
+                    energy_change = (c_v / eta * (self.dt / 3600.0)) / self.fleet[idx].battery.initial_capacity
+                    self.fleet[idx].battery.soc = max(0.0, self.fleet[idx].battery.soc + energy_change)
             elif len(self.arrived) > 0 and self.fleet[idx].status in [VehicleStatus.IDLE, VehicleStatus.CHARGING, VehicleStatus.TOCHARGE]:
                 self.fleet[idx].service_demand(self.get_closest_job(self.fleet[idx]))
 
@@ -233,6 +252,12 @@ class TaxiFleetSimulator(gym.Env):
         BETA = 1.0
         #reward = sum([v.battery.soc for v in self.fleet]) + LAMBDA * sum([v.battery.actual_capacity / v.battery.initial_capacity for v in self.fleet])
         reward = self.completed + ALPHA * sum([v.battery.actual_capacity / v.battery.initial_capacity for v in self.fleet]) # - BETA * sum([1 if v.status == VehicleStatus.RECOVERY else - for v in self.fleet])
+
+        # V2G Idle Reward Tweak: positive reward for discharging while idle
+        v2g_bonus = 0.05
+        for idx, vehicle in enumerate(self.fleet):
+            if vehicle.status == VehicleStatus.IDLE and action[idx, 1] < 0:
+                reward += v2g_bonus * abs(action[idx, 1])
 
         return (
             self._get_obs(),
