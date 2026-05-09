@@ -20,7 +20,7 @@ charging stations:
     max total power: 500
     efficiency: 0.9
     ports: 10
-  - location: 55
+  - location: 32
     max port power: 50
     max total power: 500
     efficiency: 0.9
