@@ -102,7 +102,7 @@ class TaxiFleetSimulator(gym.Env):
         # Initialize State and Action Spaces
         self.observation_space = gym.spaces.Box(0,1, shape=(len(self.fleet), 2))
         
-        self.enable_v2g = True # Toggle V2G
+        self.enable_v2g = self.config.get('enable_v2g', False) # Toggle V2G from config
         self.c_max = self.config['charging stations'][0]['max port power'] if self.config['charging stations'] else 50.0
         
         low_action = numpy.zeros((len(self.fleet), 2))
@@ -163,6 +163,9 @@ class TaxiFleetSimulator(gym.Env):
 
         # First update vehicle statuses
         eta = 0.90 # Round-trip efficiency loss
+        
+        self.current_grid_power = 0.0 # Track exact grid power
+
         for idx in range(len(self.fleet)):
             charge_flag, c_v = action[idx,0], action[idx,1]
             if not self.enable_v2g:
@@ -175,6 +178,7 @@ class TaxiFleetSimulator(gym.Env):
                     # Update SoC directly for discharging with efficiency loss
                     energy_change = (c_v / eta * (self.dt / 3600.0)) / self.fleet[idx].battery.initial_capacity
                     self.fleet[idx].battery.soc = max(0.0, self.fleet[idx].battery.soc + energy_change)
+                    self.current_grid_power += c_v # Record negative power from V2G
             elif len(self.arrived) > 0 and self.fleet[idx].status in [VehicleStatus.IDLE, VehicleStatus.CHARGING, VehicleStatus.TOCHARGE]:
                 self.fleet[idx].service_demand(self.get_closest_job(self.fleet[idx]))
 
@@ -185,6 +189,9 @@ class TaxiFleetSimulator(gym.Env):
         # Update charging vehicles
         for charger in self.charging_network:
             charger.tick(self.fleet, self.dt, self.T_a)
+            for port in charger.ports:
+                if port.vehicle is not None:
+                    self.current_grid_power += port.P_t
 
         # Get new arrivals
         self.arrived = self.arrived | self.demand.tick(self.dt)
@@ -245,6 +252,7 @@ class TaxiFleetSimulator(gym.Env):
         info['failed'] = self.failed
         info['charging_network'] = [s.to_dict() for s in self.charging_network]
         info['fleet'] = [v.to_dict() for v in self.fleet]
+        info['total_grid_power'] = self.current_grid_power
         
         # Calculate reward
         # TODO: specify as lambda

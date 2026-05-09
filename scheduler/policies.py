@@ -70,7 +70,7 @@ class DnnPolicy(SchedulePolicy):
         with torch.no_grad():
             x = torch.from_numpy(observation).unsqueeze(0).to(self.device)
             action = self.dnn(x)[0].squeeze().cpu().detach().numpy()
-            action[:, 1] = numpy.abs(action[:, 1]) * 10.0
+            action[:, 1] = action[:, 1] * 50.0 # scale from normalized [-1, 1] to max port power 50kW
             return action
 
 
@@ -88,13 +88,12 @@ class DataLogger:
         self.retired = [0] * 50
 
     def write(self, info):
-        total_power = 0
+        total_power = info.get("total_grid_power", 0.0)
         p_curr = []
         soh_curr = []
         state = []
         for v in range(50):
             p_curr.append(info["fleet"][v]["battery"]["soc"] * 72.1)
-            total_power += max(0, p_curr[-1] - self.p_old[v])
             if info["fleet"][v]["battery"]["actual_capacity"] / 72.1 <= 0.8:
                 self.retired[v] = 1
             soh_curr.append(
