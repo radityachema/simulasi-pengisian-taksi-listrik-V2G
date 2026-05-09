@@ -120,15 +120,14 @@ def plot_charge_power_distribution(logs: List[str], dt: int) -> None:
     ch_pwr = {}
     fig, ax = plt.subplots()
     labels = []
+    handles = []
     for i, log_f in enumerate(logs):
         with open(log_f, 'r') as csvfile:
             ch_pwr[log_f] = []
             reader = csv.DictReader(csvfile)
-            i = 0
-            temp = []
             for datum in reader:
                 ch_pwr[log_f].append(float(datum['total_power']))
-            ax.violinplot(
+            parts = ax.violinplot(
                 [ch_pwr[log_f]],
                 positions=[i],
                 widths=0.75,
@@ -137,9 +136,9 @@ def plot_charge_power_distribution(logs: List[str], dt: int) -> None:
                 showextrema=False,
                 showmedians=False
             )
+            handles.append(parts['bodies'][0])
             labels.append(log_f)
     ax.set_xlabel('Instantaneous Charging Power (kW)')
-    handles = [i for i in range(len(logs))]
     ax.legend(handles, labels)
     fig.tight_layout()
     plt.show()
